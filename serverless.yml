@@ -1,0 +1,25 @@
+service: fuzzy-classifier
+
+provider:
+  name: aws
+  runtime: python3.8
+
+functions:
+  numpy:
+    handler: handler.lambda_handler
+    events:
+      - http:
+          path: /
+          method: post
+
+package:
+  exclude:
+    - node_modules/**
+    - venv/**
+
+plugins:
+  - serverless-python-requirements
+
+custom:
+  pythonRequirements:
+    dockerizePip: false
