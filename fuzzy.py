@@ -11,81 +11,104 @@ class FuzzyClassifier:
         self.__set_fuzzy_rules()
 
     def __set_fuzzy_sets(self):
-        self.cost = ctrl.Antecedent(np.arange(5, 501, 0.1), 'Custo')
+        self.cost = ctrl.Antecedent(np.arange(5, 501, 0.5), 'Custo')
         self.service = ctrl.Antecedent(np.arange(0, 501, 1), 'Plano Dados')
-        self.city_coverage = ctrl.Antecedent(np.arange(0, 101, 0.001), 'Cobertura Total da Cidade')
-        self.most_valuable_areas_coverage = ctrl.Antecedent(np.arange(0, 101, 0.001), 'Cobertura das Áreas Destacadas')
-        self.claimed_issues = ctrl.Antecedent(np.arange(0, 1000, 1), 'Reclamações/acesso')
+
+        self.city_coverage2G = ctrl.Antecedent(np.arange(0, 101, 0.001), 'Cobertura Total da Cidade 2g')
+        self.city_coverage3G = ctrl.Antecedent(np.arange(0, 101, 0.001), 'Cobertura Total da Cidade 3g')
+        self.city_coverage4G = ctrl.Antecedent(np.arange(0, 101, 0.001), 'Cobertura Total da Cidade 4g')
+
+        self.most_valuable_areas_coverage2G = ctrl.Antecedent(np.arange(0, 101, 0.001),
+                                                              'Cobertura das Areas Destacadas 2g')
+        self.most_valuable_areas_coverage3G = ctrl.Antecedent(np.arange(0, 101, 0.001),
+                                                              'Cobertura das Areas Destacadas 3g')
+        self.most_valuable_areas_coverage4G = ctrl.Antecedent(np.arange(0, 101, 0.001),
+                                                              'Cobertura das Areas Destacadas 4g')
+
+        self.claimed_issues = ctrl.Antecedent(np.arange(0, 1, 0.00001), 'Reclamacoes')
         self.final_rating = ctrl.Consequent(np.arange(0, 11, 0.5), 'Nota Final')
 
     def __set_membership_functions(self):
-        self.city_coverage.automf(5)
-        self.most_valuable_areas_coverage.automf(5)
-        self.service.automf(5)
-        self.final_rating.automf(5)
+        self.city_coverage2G.automf(3)
+        self.city_coverage3G.automf(3)
+        self.city_coverage4G.automf(3)
+        self.most_valuable_areas_coverage2G.automf(3)
+        self.most_valuable_areas_coverage3G.automf(3)
+        self.most_valuable_areas_coverage4G.automf(3)
 
-        self.cost['very_expensive'] = fuzz.trimf(self.cost.universe, [255, 500, 500])
-        self.cost['normal_expensive'] = fuzz.trimf(self.cost.universe, [125, 190, 255])
-        self.cost['average'] = fuzz.trimf(self.cost.universe, [75, 100, 125])
+        self.cost['very_expensive'] = fuzz.gaussmf(self.cost.universe, 500, 100)
+        self.cost['normal_expensive'] = fuzz.gaussmf(self.cost.universe, 200, 30)
+        self.cost['average'] = fuzz.gaussmf(self.cost.universe, 120, 50)
         self.cost['normal_cheap'] = fuzz.trimf(self.cost.universe, [30, 50, 75])
         self.cost['very_cheap'] = fuzz.trimf(self.cost.universe, [5, 5, 30])
 
-        self.claimed_issues['very_high'] = fuzz.trimf(self.claimed_issues.universe, [700, 1000, 1000])
-        self.claimed_issues['normal_high'] = fuzz.trimf(self.claimed_issues.universe, [500, 600, 700])
-        self.claimed_issues['average'] = fuzz.trimf(self.claimed_issues.universe, [300, 400, 500])
-        self.claimed_issues['normal_low'] = fuzz.trimf(self.claimed_issues.universe, [100, 200, 300])
-        self.claimed_issues['very_low'] = fuzz.trimf(self.claimed_issues.universe, [0, 0, 100])
+        self.claimed_issues['high'] = fuzz.trimf(self.claimed_issues.universe, [0.6, 1, 1])
+        self.claimed_issues['average'] = fuzz.gaussmf(self.claimed_issues.universe, 0.5, 0.1)
+        self.claimed_issues['low'] = fuzz.trimf(self.claimed_issues.universe, [0, 0, 0.4])
+
+        self.final_rating['very_good'] = fuzz.pimf(self.final_rating.universe, 8.3, 10, 11, 11)
+        self.final_rating['good'] = fuzz.gaussmf(self.final_rating.universe, 7.5, 1)
+        self.final_rating['average'] = fuzz.gaussmf(self.final_rating.universe, 5.5, 1.5)
+        self.final_rating['mediocre'] = fuzz.gaussmf(self.final_rating.universe, 3, 0.5)
+        self.final_rating['poor'] = fuzz.trimf(self.final_rating.universe, [0, 0, 2.5])
+
+        self.service['high'] = fuzz.pimf(self.service.universe, 100, 500, 1000, 1000)
+        self.service['average'] = fuzz.trimf(self.service.universe, [30, 100, 200])
+        self.service['low'] = fuzz.sigmf(self.service.universe, 40, -1)
 
     def __set_fuzzy_rules(self):
-        self.rule1 = ctrl.Rule(self.city_coverage['good'] &
-                               self.service['good'] &
-                               self.most_valuable_areas_coverage['good'] &
-                               self.cost['very_cheap'] &
-                               self.claimed_issues['very_low'],
-                               self.final_rating['good'])
-        self.rule2 = ctrl.Rule(
-            (self.city_coverage['decent'] &
-             self.service['decent'] &
-             self.most_valuable_areas_coverage['decent'] &
-             self.cost['normal_cheap'] &
-             self.claimed_issues['normal_low']
-             ) |
-            (self.most_valuable_areas_coverage['good'] &
-             self.city_coverage['decent']
-             ), self.final_rating['decent'])
+        self.rule1 = ctrl.Rule(self.city_coverage4G['good'] &
+                               self.most_valuable_areas_coverage4G['good'] &
+                               self.most_valuable_areas_coverage3G['good'] &
+                               self.service['high'] &
+                               (self.cost['very_cheap'] | self.cost['normal_cheap']) &
+                               self.claimed_issues['low'],
+                               self.final_rating['very_good'])
 
-        self.rule3 = ctrl.Rule(self.city_coverage['average'] &
+        self.rule2 = ctrl.Rule(self.city_coverage4G['good'] &
+                               self.most_valuable_areas_coverage4G['good'] &
                                self.service['average'] &
-                               self.most_valuable_areas_coverage['average'] &
-                               self.cost['average'] &
-                               self.claimed_issues['average'],
+                               (self.cost['normal_cheap'] | self.cost['average']) &
+                               self.claimed_issues['low'],
+                               self.final_rating['very_good'])
+
+        self.rule3 = ctrl.Rule((self.city_coverage4G['average'] &
+                                self.most_valuable_areas_coverage4G['average'] &
+                                self.most_valuable_areas_coverage3G['average']) |
+                               (self.service['average'] &
+                                self.cost['average'] &
+                                self.claimed_issues['average']),
                                self.final_rating['average'])
 
-        self.rule4 = ctrl.Rule(self.city_coverage['mediocre'] &
-                               self.service['mediocre'] &
-                               self.most_valuable_areas_coverage['mediocre'] &
-                               self.cost['normal_expensive'] &
-                               self.claimed_issues['normal_high'],
+        self.rule4 = ctrl.Rule((~self.city_coverage4G['good'] &
+                                ~self.city_coverage3G['good'] &
+                                self.city_coverage2G['good']) |
+                               (~self.most_valuable_areas_coverage4G['good'] &
+                                ~self.most_valuable_areas_coverage3G['good'] &
+                                self.most_valuable_areas_coverage2G['good']),
                                self.final_rating['mediocre'])
 
-        self.rule5 = ctrl.Rule(self.city_coverage['poor'] &
-                               self.service['poor'] &
-                               self.most_valuable_areas_coverage['poor'] &
-                               self.cost['very_expensive'] &
-                               self.claimed_issues['very_high'],
-                               self.final_rating['mediocre'])
+        self.rule5 = ctrl.Rule((self.city_coverage4G['poor'] & self.city_coverage3G['poor']) |
+                               (self.most_valuable_areas_coverage4G['poor'] & self.most_valuable_areas_coverage3G['poor']) |
+                               self.claimed_issues['high'],
+                               self.final_rating['poor'])
 
-    def get_result_for(self, city_coverage, most_valuable_areas_coverage, cost, service, claimed_issues):
+    def get_result_for(self, city_coverage2G, city_coverage3G, city_coverage4G, most_valuable_areas_coverage2G,
+                       most_valuable_areas_coverage3G, most_valuable_areas_coverage4G, cost, service, claimed_issues):
         """Get final_rating<numeric> from input city_coverage, and other params"""
 
         mobile_operator_ctrl = ctrl.ControlSystem([self.rule1, self.rule2, self.rule3, self.rule4, self.rule5])
         mobile_operator = ctrl.ControlSystemSimulation(mobile_operator_ctrl)
 
-        mobile_operator.input['Cobertura Total da Cidade'] = city_coverage
-        mobile_operator.input['Cobertura das Áreas Destacadas'] = most_valuable_areas_coverage
+        mobile_operator.input['Cobertura Total da Cidade 2g'] = city_coverage2G
+        mobile_operator.input['Cobertura Total da Cidade 3g'] = city_coverage3G
+        mobile_operator.input['Cobertura Total da Cidade 4g'] = city_coverage4G
+        mobile_operator.input['Cobertura das Areas Destacadas 2g'] = most_valuable_areas_coverage2G
+        mobile_operator.input['Cobertura das Areas Destacadas 3g'] = most_valuable_areas_coverage3G
+        mobile_operator.input['Cobertura das Areas Destacadas 4g'] = most_valuable_areas_coverage4G
         mobile_operator.input['Custo'] = cost
         mobile_operator.input['Plano Dados'] = service
-        mobile_operator.input['Reclamações/acesso'] = claimed_issues
+        mobile_operator.input['Reclamacoes'] = claimed_issues
 
         mobile_operator.compute()
         return mobile_operator.output['Nota Final']

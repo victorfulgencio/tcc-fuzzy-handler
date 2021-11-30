@@ -1,4 +1,4 @@
-service: fuzzy-classifier
+service: lambda-classifier
 
 provider:
   name: aws
